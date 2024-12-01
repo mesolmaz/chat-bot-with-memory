@@ -39,7 +39,7 @@ workflow.add_node("model", call_model)
 chatbot = workflow.compile(
     checkpointer=MemorySaver()
 )
-
+ 
 # The thread id is a unique key that identifies
 # this particular conversation.
 # We'll just generate a random uuid here.
