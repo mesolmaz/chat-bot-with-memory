@@ -10,25 +10,25 @@ from langchain_openai import ChatOpenAI
 
 model = ChatOpenAI(model="gpt-4o-mini")
 
-# Define the function that calls the model
-def call_model(state: MessagesState):
-    system_prompt = (
-        "You are a helpful assistant. "
-        "Answer all questions to the best of your ability."
-    )
-    messages = [SystemMessage(content=system_prompt)] + state["messages"]
-    response = model.invoke(messages)
-    return {"messages": response}
-
 # # Define the function that calls the model
-# async def call_model(state: MessagesState):
+# def call_model(state: MessagesState):
 #     system_prompt = (
 #         "You are a helpful assistant. "
 #         "Answer all questions to the best of your ability."
 #     )
 #     messages = [SystemMessage(content=system_prompt)] + state["messages"]
-#     response = await model.ainvoke(messages)
+#     response = model.invoke(messages)
 #     return {"messages": response}
+
+## Define the function that calls the model
+async def call_model(state: MessagesState):
+    system_prompt = (
+        "You are a helpful assistant. "
+        "Answer all questions to the best of your ability."
+    )
+    messages = [SystemMessage(content=system_prompt)] + state["messages"]
+    response = await model.ainvoke(messages)
+    return {"messages": [response]}
 
 # Define a new graph
 workflow = StateGraph(state_schema=MessagesState)
@@ -68,9 +68,11 @@ chatbot = workflow.compile(
 
 # thread_id = uuid.uuid4()
 # config = {"configurable": {"thread_id": thread_id}}
-# response = asyncio.run(chatbot.ainvoke({"messages": [HumanMessage(content="Hi I am Mehmet.")]}, config=config))
-# print(response)
 
-# print(chatbot.ainvoke(
-#     {"messages": [HumanMessage(content="what was my name?")]},
-#     config=config))
+# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+# inputs = {"messages": [("human", "Hi I am Mehmet.")]}
+# async def main(inputs):
+#     response = await chatbot.ainvoke(inputs, config)
+#     print(response)
+
+# asyncio.run(main(inputs))
