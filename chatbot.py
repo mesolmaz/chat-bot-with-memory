@@ -1,3 +1,4 @@
+import time
 import uuid
 import asyncio
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -8,7 +9,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-4o-mini")
+model = ChatOpenAI(model="gpt-4o-mini", temperature=0,\
+                   max_tokens=None, timeout=None)
 
 # # Define the function that calls the model
 # def call_model(state: MessagesState):
@@ -72,7 +74,9 @@ chatbot = workflow.compile(
 # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 # inputs = {"messages": [("human", "Hi I am Mehmet.")]}
 # async def main(inputs):
-#     response = await chatbot.ainvoke(inputs, config)
-#     print(response)
+#     chunks = []
+#     async for chunk in chatbot.astream(inputs, config):
+#         print(chunk["model"]["messages"][-1])
+#         time.sleep(0.5)
 
 # asyncio.run(main(inputs))

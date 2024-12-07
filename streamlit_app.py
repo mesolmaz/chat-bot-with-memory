@@ -15,11 +15,14 @@ def response_generator(prompt, config):
         yield word + " "
         time.sleep(0.05)
 
-async def async_response_generator(prompt, config):
-    response = await chatbot.ainvoke({"messages": [HumanMessage(content=prompt)]}, config=config)
-    for word in response['messages'][-1].content.split():
-        yield word + " "
-        time.sleep(0.05)
+async def async_response_generator(placeholder, prompt, config):
+    streamed_text = ""
+    async for chunk in chatbot.astream({"messages": [HumanMessage(content=prompt)]}, config=config):
+        streamed_text = streamed_text + chunk["model"]["messages"][-1].content
+        # print(streamed_text)
+        placeholder.write(streamed_text)
+    st.session_state.messages.append({"type": "assistant", "content": streamed_text})
+
 
 async def main() -> None:
     if "thread_id" not in st.session_state:
@@ -48,16 +51,8 @@ async def main() -> None:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Display assistant response in chat message container
-        with st.chat_message("assistant"):
-            # response = st.write_stream(response_generator(prompt, st.session_state.config))
-            result = []
-            async for item in async_response_generator(prompt, st.session_state.config):
-                result.append(item)
-            response = st.write("".join(result))
-        # Add assistant response to chat history
-        st.session_state.messages.append({"type": "assistant", "content": response})
-
+        ai_placeholder = st.chat_message("assistant")
+        await async_response_generator(ai_placeholder, prompt, st.session_state.config)
 
 if __name__ == "__main__":
     asyncio.run(main())
