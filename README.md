@@ -18,5 +18,6 @@ $ pip install requirements.txt
 ```yaml
 $ streamlit run streamlit_app.py
 ```
-- as below:
+- Example below:
+
 ![Simple chat with memory](image.png)
