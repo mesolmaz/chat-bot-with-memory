@@ -1,19 +1,11 @@
 import asyncio
 import time
 import uuid
-from pydantic import BaseModel, Field
-from typing import AsyncGenerator
 import streamlit as st
 from chatbot import chatbot
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage
 
 st.title("Simple chat-bot")
-
-def response_generator(prompt, config):
-    response = chatbot.invoke({"messages": [HumanMessage(content=prompt)]}, config=config)
-    for word in response['messages'][-1].content.split():
-        yield word + " "
-        time.sleep(0.05)
 
 async def async_response_generator(placeholder, prompt, config):
     streamed_text = ""
@@ -34,9 +26,6 @@ async def main() -> None:
         st.session_state.messages = messages
         st.session_state.thread_id = thread_id
         st.session_state.config = config
-        # print(st.session_state.thread_id)
-        # print(st.session_state.config)
-
 
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
@@ -56,4 +45,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-    # main() 
