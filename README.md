@@ -1,5 +1,5 @@
 # Chat-Bot with memory
-This repo is a simple chat bot using Langgraph and Streamlit libraries. It uses OpenAI LLM models using Langchain ChatOpenAI. It can be adapted to other chat models as well.
+This repo is a chat-bot built using FastApi, Langgraph and Streamlit libraries. It uses OpenAI LLM models via Langchain ChatOpenAI. It can be adapted to other chat models as well.
 
 ### 1. Environment variables setup 
 - OPENAI_API_KEY:  ## api key obtained from OpenAI
@@ -14,7 +14,11 @@ $ conda activate chatbot
 $ pip install requirements.txt
 ```
 ### 3. Running the Chat-Bot
-- After running the command below, you can start chatting,
+- First, start the Chat-Bot service:
+```yaml
+$ python chatbot.py
+```
+- Now, on another prompt window, run the command below. Start chatting on your browser http://localhost:8501/ :
 ```yaml
 $ streamlit run streamlit_app.py
 ```
