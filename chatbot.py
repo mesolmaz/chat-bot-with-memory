@@ -1,7 +1,12 @@
 import time
 import uuid
 import asyncio
-from langchain_core.messages import SystemMessage
+import json
+import uvicorn
+from typing import AsyncGenerator
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 from langchain_openai import ChatOpenAI
@@ -9,8 +14,8 @@ from langchain_openai import ChatOpenAI
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0,\
                    max_tokens=None, timeout=None)
 
+app = FastAPI()
 
-## Define the function that calls the model
 async def call_model(state: MessagesState):
     system_prompt = (
         "You are a helpful assistant. "
@@ -25,26 +30,34 @@ workflow = StateGraph(state_schema=MessagesState)
 # Define the two nodes we will cycle between
 workflow.add_edge(START, "model")
 workflow.add_node("model", call_model)
-
 chatbot = workflow.compile(
     checkpointer=MemorySaver()
 )
 
+@app.get('/ping')
+async def ping():
+    return {"message": "ok"}
 
-def test():
-    # The thread id is a unique key that identifies
-    # this particular conversation.
-    # We'll just generate a random uuid here.
-    # This enables a single application to manage conversations among multiple users.
+@app.get("/health")
+async def health() -> Response:
+    """Health check."""
+    return Response(status_code=200)
 
-    thread_id = uuid.uuid4()
-    config = {"configurable": {"thread_id": thread_id}}
+@app.post("/invocations")
+async def generate(request: Request) -> Response:
 
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    inputs = {"messages": [("human", "Hi I am Mehmet.")]}
-    async def main(inputs):
-        async for chunk in chatbot.astream(inputs, config):
-            print(chunk["model"]["messages"][-1])
-            time.sleep(0.5)
+    request_dict = await request.json()
+    prompt = request_dict.pop("prompt")
+    config = request_dict.pop("config")
 
-    asyncio.run(main(inputs))
+    async def stream_results() -> AsyncGenerator[bytes, None]:
+        streamed_text = ""
+        async for chunk in chatbot.astream({"messages": [HumanMessage(content=prompt)]}, config=config):
+            streamed_text = streamed_text + chunk["model"]["messages"][-1].content
+            ret = {"text": streamed_text}
+            yield (json.dumps(ret)).encode("utf-8")
+
+    return StreamingResponse(stream_results())
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="localhost", port=8000)

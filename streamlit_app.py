@@ -1,26 +1,32 @@
 import asyncio
 import time
+import json
+import requests
 import uuid
 import streamlit as st
 from chatbot import chatbot
 from langchain_core.messages import HumanMessage
 
 st.title("Simple chat-bot")
+url = "http://localhost:8000/invocations/"
 
 async def async_response_generator(placeholder, prompt, config):
-    streamed_text = ""
-    async for chunk in chatbot.astream({"messages": [HumanMessage(content=prompt)]}, config=config):
-        streamed_text = streamed_text + chunk["model"]["messages"][-1].content
-        # print(streamed_text)
-        placeholder.write(streamed_text)
-    st.session_state.messages.append({"type": "assistant", "content": streamed_text})
 
+    input = {"prompt": prompt, "config": config}
+    payload = json.dumps(input)
+    resp = requests.post(url, data=payload)
+    if resp.status_code == 200:
+        streamed_text = json.loads(resp.content.decode())["text"]
+        placeholder.write(streamed_text)
+        st.session_state.messages.append({"type": "assistant", "content": streamed_text})
+    else:
+        placeholder.write("Error: ", resp.status_code)
 
 async def main() -> None:
     if "thread_id" not in st.session_state:
         thread_id = st.query_params.get("thread_id")
         if not thread_id:
-            thread_id = uuid.uuid4()
+            thread_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
             messages = []
         st.session_state.messages = messages
