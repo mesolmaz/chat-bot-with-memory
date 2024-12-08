@@ -6,7 +6,7 @@ import uvicorn
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, trim_messages
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 from langchain_openai import ChatOpenAI
@@ -21,8 +21,24 @@ async def call_model(state: MessagesState):
         "You are a helpful assistant. "
         "Answer all questions to the best of your ability."
     )
-    messages = [SystemMessage(content=system_prompt)] + state["messages"]
-    response = await model.ainvoke(messages)
+    state["messages"] = [SystemMessage(content=system_prompt)] + state["messages"]
+    selected_messages = trim_messages(
+        state["messages"],
+        token_counter=len,  # <-- len will simply count the number of messages rather than tokens
+        max_tokens=5,  # <-- allow up to 5 messages.
+        strategy="last",
+        # Most chat models expect that chat history starts with either:
+        # (1) a HumanMessage or
+        # (2) a SystemMessage followed by a HumanMessage
+        # start_on="human" makes sure we produce a valid chat history
+        start_on="human",
+        # Usually, we want to keep the SystemMessage
+        # if it's present in the original history.
+        # The SystemMessage has special instructions for the model.
+        include_system=True,
+        allow_partial=False,
+    )
+    response = await model.ainvoke(selected_messages)
     return {"messages": [response]}
 
 # Define a new graph
